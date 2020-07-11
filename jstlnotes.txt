@@ -1,0 +1,100 @@
+<%@page isELIgnored="false"%>
+<%@taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+
+<c:set var="salary" value="${9000}" scope="session" />
+<c:out value="${salary}" />
+<br />
+
+<c:import url="http://www.google.com" var="data" />
+<c:out value="${data}" />
+<br />
+
+<c:remove var="salary" />
+After Remove Value is:
+<c:out value="${salary}" />
+<br />
+
+<c:catch var="catchtheException">
+	<%
+		int x = 2 / 0;
+	%>
+</c:catch>
+
+<c:if test="${catchtheException!=null}">
+	<p>
+		The type of exception is : ${catchtheException}<br /> There is an
+		exception: ${catchtheException.message}
+	</p>
+</c:if>
+
+<c:if test="${salary>8000}">
+	<p>
+		My Income is
+		<c:out value="${salary}"></c:out>
+</c:if>
+<br />
+
+<c:choose>
+	<c:when test="${salary}<=1000">
+    Income is not Good
+  </c:when>
+	<c:when test="${salary}>10000">
+    Income is very Good
+  </c:when>
+	<c:otherwise>
+     Income is undetermined
+  </c:otherwise>
+</c:choose>
+<br />
+
+<c:forEach var="i" begin="1" end="5">
+ Item <c:out value="${i}" />
+	<br />
+</c:forEach>
+
+<c:forTokens items="Chandra-Charan-Syed-Reza-Swathi" delims="-"
+	var="name">
+	<c:out value="${name}" />
+	<br />
+</c:forTokens>
+<br />
+<c:set var="url" value="0" scope="request" />
+<c:if test="${url<1}">
+	<c:redirect url="http://www.eenadu.net" />
+</c:if>
+<c:if test="${url>1}">
+	<c:redirect url="http://facebook.com" />
+</c:if>
+<c:url value="/contactus.jsp"/>
+
+===========================================================
+SQL TAG's
+=============================================================
+
+<%@page isELIgnored="false"%>
+<%@taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<%@taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
+
+<sql:setDataSource var="db" driver="com.mysql.jdbc.Driver"
+ url="jdbc:mysql://localhost:3307/test"
+ user="root"
+ password="root"/>
+ 
+ <sql:query var="rs" dataSource="${db}">
+ select * from student;
+ </sql:query>
+ <table align="center" border="3">
+  <tr>
+    <th>SID</th>
+    <th>SNAME</th>
+    <th>MARKS</th>
+  </tr>
+  <c:forEach var="table" items="${rs.rows}">
+  <tr>
+    <td><c:out value="${table.sid}"/></td>
+    <td><c:out value="${table.sname}"/></td>
+    <td><c:out value="${table.marks}"></c:out>
+  </tr>
+  </c:forEach>
+ </table>
+

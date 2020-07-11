@@ -1,0 +1,365 @@
+Core Java + Jdbc + Html + Servlet Based Login Application steps
+================================================================
+step1:create a database table in your MYSQL(userdetails table) after insert the records
+
+CREATE  TABLE `demo`.`userdetails` (
+  `uid` INT NOT NULL AUTO_INCREMENT ,
+  `uname` VARCHAR(45) NULL ,
+  `password` VARCHAR(45) NULL ,
+  `type` VARCHAR(45) NULL ,
+  PRIMARY KEY (`uid`) );
+  
+INSERT INTO `demo`.`userdetails` (`uname`, `password`, `type`) VALUES ('chandra', 'chandra', 'admin');
+INSERT INTO `demo`.`userdetails` (`uname`, `password`, `type`) VALUES ('charan', 'charan', 'user');
+
+step2:create a maven web project along with following dependecies
+<!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
+<dependency>
+    <groupId>mysql</groupId>
+    <artifactId>mysql-connector-java</artifactId>
+    <version>5.1.34</version>
+</dependency>
+
+step3:create a view pages(login.html,AdminHome.html,UserHome.html)
+login.html
+-----------
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>LoginPage</title>
+</head>
+<body>
+	<center>
+		<h1>
+			<u>Login Application</u>
+		</h1>
+	</center>
+	<form action="login" method="post">
+		<table align="center">
+			<tr>
+				<td></td>
+				<td><a href="SignUp.html">SignUp</a></td>
+			</tr>
+			<tr>
+				<td>UserName</td>
+				<td><input type="text" name="uname" /></td>
+			</tr>
+			<tr>
+				<td>PassWord</td>
+				<td><input type="password" name="pass" /></td>
+			</tr>
+			<tr>
+				<td><input type="submit" value="LogIn" /></td>
+				<td><a href="forgot.html">ForgotPassWord?</a></td>
+			</tr>
+		</table>
+	</form>
+</body>
+</html>
+
+AdminHome.html
+--------------
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>AdminPage</title>
+</head>
+<body>
+<center><h1>WELCOME TO ADMIN HOME PAGE</h1></center>
+</body>
+</html>
+
+UserHome.html
+--------------
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>UserHomePage</title>
+</head>
+<body>
+	<center>
+		<h1>WELCOME TO USER HOME PAGE</h1>
+	</center>
+</body>
+</html>
+
+STEP4:create a model class(pojo/bean class)[Users.java]
+package com.chandra.web.bean;
+
+public class Users {
+
+	private int userId;
+	private String userName;
+	private String passWord;
+	private String type;
+
+	public Users() {
+	}
+
+	public Users(int userId, String userName, String passWord, String type) {
+		super();
+		this.userId = userId;
+		this.userName = userName;
+		this.passWord = passWord;
+		this.type = type;
+	}
+
+	public int getUserId() {
+		return userId;
+	}
+
+	public void setUserId(int userId) {
+		this.userId = userId;
+	}
+
+	public String getUserName() {
+		return userName;
+	}
+
+	public void setUserName(String userName) {
+		this.userName = userName;
+	}
+
+	public String getPassWord() {
+		return passWord;
+	}
+
+	public void setPassWord(String passWord) {
+		this.passWord = passWord;
+	}
+
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
+
+	public String toString() {
+		return userId + "\t" + userName + "\t" + passWord + "\t" + type;
+	}
+
+}
+step5:create a database properties file(db.properties)(src/main/resources)
+db.properties
+---------------
+driver=com.mysql.jdbc.Driver
+url=jdbc\:mysql\://localhost\:3307/demo
+username=root
+password=root
+
+
+step6:create Database Connection class(DBUtil.java)
+
+package com.chandra.web.db;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.Properties;
+
+public class DBUtil {
+
+	static Connection con = null;
+
+	public static Connection getConnection() {
+		try {
+			File path = new File("G:/NewJDBC/Login_Jdbc_Servlet_App/src/main/resources/db.properties");
+			FileInputStream fis = new FileInputStream(path);
+			Properties p = new Properties();
+			p.load(fis);
+
+			Class.forName(p.getProperty("driver"));
+			con = DriverManager.getConnection(p.getProperty("url"), p.getProperty("username"), p.getProperty("password"));
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        return con;
+	}
+}
+
+step7:create a Data Accessing Object(UserDAO.java-->interface)
+
+package com.chandra.web.dao;
+import com.chandra.web.bean.Users;
+public interface UserDAO {
+	
+	public String login(Users user);
+	//public String forgot(String userName,String type);
+	//public void register(Users user);
+
+}
+
+step 8:create a dao implementation class(UserDAOImpl.java)
+package com.chandra.web.dao;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+import com.chandra.web.bean.Users;
+import com.chandra.web.db.DBUtil;
+
+public class UserDAOImpl implements UserDAO {
+
+	Connection con = DBUtil.getConnection();
+	PreparedStatement ps = null;
+	ResultSet rs = null;
+	
+	public String login(Users user) {
+		String type=null;
+		try {
+			ps = con.prepareStatement("SELECT type FROM userdetails WHERE uname=? and password=?");
+			ps.setString(1, user.getUserName());
+			ps.setNString(2, user.getPassWord());
+			rs = ps.executeQuery();
+			while(rs.next())
+			{
+				type=rs.getString(1);
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return type;
+	}
+
+}
+
+step9:create a LoginServlet(controller) Servlet(LoginServlet.java)
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		PrintWriter out = response.getWriter();
+		response.setContentType("text/html");
+		UserDAOImpl userDAO = new UserDAOImpl();
+		Users user = new Users();
+		user.setUserName(request.getParameter("uname"));
+		user.setPassWord(request.getParameter("pass"));
+		String type = userDAO.login(user);
+		if (type == null) {
+			out.println("Invalid UserName/PassWord.Please try again...");
+			RequestDispatcher rd = request.getRequestDispatcher("./login.html");
+			rd.include(request, response);
+		} else if (type.equals("admin")) {
+			RequestDispatcher rd = request.getRequestDispatcher("./AdminHome.html");
+			rd.forward(request, response);
+		} else {
+			RequestDispatcher rd = request.getRequestDispatcher("./UserHome.html");
+			rd.forward(request, response);
+		}
+	}
+
+step10:configuring welcome and deploye the application
+
+forgot.html
+------------
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>ForgotPage</title>
+</head>
+<body>
+	<center>
+		<h1>
+			<u>ForgorPassWord</u>
+		</h1>
+	</center>
+	<form action="forgot" method="post">
+		<table align="center" border="3">
+			<tr>
+				<td>UserName</td>
+				<td><input type="text" name="uname" /></td>
+			</tr>
+			<tr>
+				<td>UserType</td>
+				<td><select name="type">
+						<option value="admin">Admin</option>
+						<option value="user">User</option>
+				</select></td>
+			<tr>
+				<td><input type="submit" value="GetPassWord" /></td>
+			</tr>
+			</tr>
+		</table>
+	</form>
+</body>
+</html>
+
+update UserDAOImpl.java
+----------------------
+package com.chandra.web.dao;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+import com.chandra.web.bean.Users;
+import com.chandra.web.db.DBUtil;
+
+public class UserDAOImpl implements UserDAO {
+
+	Connection con = DBUtil.getConnection();
+	PreparedStatement ps = null;
+	ResultSet rs = null;
+	
+	public String login(Users user) {
+		String type=null;
+		try {
+			ps = con.prepareStatement("SELECT type FROM userdetails WHERE uname=? and password=?");
+			ps.setString(1, user.getUserName());
+			ps.setNString(2, user.getPassWord());
+			rs = ps.executeQuery();
+			while(rs.next())
+			{
+				type=rs.getString(1);
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return type;
+	}
+
+	public String forgot(String userName, String type) {
+		String pwd=null;
+		try {
+			ps = con.prepareStatement("SELECT password FROM userdetails WHERE uname=? and type=?");
+			ps.setString(1, userName);
+			ps.setNString(2, type);
+			rs = ps.executeQuery();
+			while(rs.next())
+			{
+				pwd = rs.getString(1);
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return pwd;
+	}
+
+}
+
+
+

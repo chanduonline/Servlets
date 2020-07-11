@@ -1,0 +1,423 @@
+Core Java + Servlets + Jsp + MySql CURD Application Steps
+=========================================================
+step1:create data base table book
+
+CREATE  TABLE `5amdb`.`book` (
+  `bid` INT(11) NOT NULL AUTO_INCREMENT ,
+  `title` VARCHAR(45) NOT NULL ,
+  `author` VARCHAR(45) NOT NULL ,
+  `price` DECIMAL(10) NOT NULL ,
+  PRIMARY KEY (`bid`) );
+
+step2:create maven web project along with mysql,jstl,standard dependecy
+
+<dependencies>
+		<!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>5.1.34</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/javax.servlet/jstl -->
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>jstl</artifactId>
+			<version>1.2</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/taglibs/standard -->
+		<dependency>
+			<groupId>taglibs</groupId>
+			<artifactId>standard</artifactId>
+			<version>1.1.2</version>
+		</dependency>
+
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>3.8.1</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+Step3: Create a Model/bean class 
+
+package com.bms.app.model;
+//Encapsulation  = Data Hiding + Data Abstraction
+public class Book {
+	//Data Hiding
+	private int id;
+	private String title;
+	private String author;
+	private double price;
+	
+	public Book(){}
+	
+	public Book(int id){
+		this.id=id;
+	}
+
+	public Book(int id, String title, String author, double price) {
+		this.id = id;
+		this.title = title;
+		this.author = author;
+		this.price = price;
+	}
+    //Data Abstraction
+	public int getId() {
+		return id;
+	}
+
+	public void setId(int id) {
+		this.id = id;
+	}
+
+	public String getTitle() {
+		return title;
+	}
+
+	public void setTitle(String title) {
+		this.title = title;
+	}
+
+	public String getAuthor() {
+		return author;
+	}
+
+	public void setAuthor(String author) {
+		this.author = author;
+	}
+
+	public double getPrice() {
+		return price;
+	}
+
+	public void setPrice(double price) {
+		this.price = price;
+	}
+	
+	public String toString()
+	{
+		return id+"\t"+title+"\t"+author+"\t"+price;
+	}
+
+}
+
+Step4 :Create Database Utility Class(to get the database connection the following files you need to create)
+
+4.1 db.properties(src/main/resource)
+
+driver=com.mysql.jdbc.driver
+url=jdbc\:mysql\://localhost\:3307/5amdb
+username=root
+password=root
+
+4.2: creating database utility class(DBUtil.java)
+
+package com.bms.app.db;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.Properties;
+
+public class DBUtil {
+	
+	public static Connection con = null;
+	
+	public static Connection getConnection()
+	{
+		try {
+			//Core Java IO package
+			File path = new File(".G:\\NewJDBC\\BookManagement\\src\\main\\resources\\db.properties");
+			FileInputStream fis = new FileInputStream(path);
+			//Core Java util
+			Properties p = new Properties();
+			p.load(fis);
+			//Jdbc
+			Class.forName(p.getProperty("driver"));
+			con = DriverManager.getConnection(p.getProperty("url"),p.getProperty("username"), p.getProperty("password"));
+			
+		} catch (IOException | SQLException | ClassNotFoundException e) {//Core Java Exception
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
+		
+		return con;
+				
+	}
+
+}
+
+Step5:create Data Accesing Object(BookDAO.java)
+
+package com.bms.app.dao;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.bms.app.db.DBUtil;
+import com.bms.app.model.Book;
+
+public class BookDAO {
+
+	public Connection con = DBUtil.getConnection();
+	public PreparedStatement ps = null;
+	ResultSet rs = null;
+	Book book = null;
+
+	// book create
+	public boolean insertBook(Book book) throws SQLException {
+		String insert_sql = "INSERT INTO book(title,author,price) values(?,?,?)";
+		ps = con.prepareStatement(insert_sql);
+		ps.setString(1, book.getTitle());
+		ps.setString(2, book.getAuthor());
+		ps.setDouble(3, book.getPrice());
+		boolean rowInserted = ps.executeUpdate() > 0;
+		ps.close();
+		return rowInserted;
+	}
+
+	// get All Books
+	public List<Book> getAllBooks() throws SQLException {
+		List<Book> listBook = new ArrayList<Book>();
+		String select_books = "SELECT * FROM BOOK";
+		ps = con.prepareStatement(select_books);
+		rs = ps.executeQuery();
+		while (rs.next()) {
+			int id = rs.getInt(1);
+			String title = rs.getString(2);
+			String author = rs.getString(3);
+			double price = rs.getDouble(4);
+			book = new Book(id, title, author, price);
+			listBook.add(book);
+		}
+		ps.close();
+		return listBook;
+	}
+
+	// update book
+	public boolean updateBook(Book book) throws SQLException {
+		String update_book = "UPDATE book SET title =?,author=?,price=? WHERE bid=?";
+		ps = con.prepareStatement(update_book);
+		ps.setString(1, book.getTitle());
+		ps.setString(2, book.getAuthor());
+		ps.setDouble(3, book.getPrice());
+		ps.setInt(4, book.getId());
+
+		boolean rowUpdated = ps.executeUpdate() > 0;
+		ps.close();
+		return rowUpdated;
+
+	}
+
+	// Delete Book
+	public boolean deleteBook(Book book) throws SQLException {
+		String delete_book = "DELETE FROM book  WHERE bid=?";
+		ps = con.prepareStatement(delete_book);
+		ps.setInt(1, book.getId());
+		boolean rowDeleted = ps.executeUpdate() > 0;
+		ps.close();
+		return rowDeleted;
+
+	}
+
+	// getBook based on id
+	public Book getBook(int id) throws SQLException {
+		String get_book = "SELECT * FROM book WHERE bid=?";
+		ps = con.prepareStatement(get_book);
+		ps.setInt(1, id);
+		rs = ps.executeQuery();
+		if (rs.next()) {
+			int bid = rs.getInt("bid");
+			String title = rs.getString("title");
+			String author = rs.getString("author");
+			double price = rs.getDouble("price");
+			book = new Book(bid, title, author, price);
+		}
+		//ps.close();
+		return book;
+	}
+}
+Step 6:create BookForm.jsp to add the  book information
+
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8" isELIgnored="false"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<html>
+<head>
+    <title>Books Store Application</title>
+</head>
+<body>
+    <center>
+        <h1>Books Management</h1>
+        <h2>
+            <a href="./new">Add New Book</a>
+            &nbsp;&nbsp;&nbsp;
+            <a href="./list">List All Books</a>
+             
+        </h2>
+    </center>
+    <div align="center">
+        <c:if test="${book != null}">
+            <form action="update" method="post">
+        </c:if>
+        <c:if test="${book == null}">
+            <form action="insert" method="post">
+        </c:if>
+        <table border="1" cellpadding="5">
+            <caption>
+                <h2>
+                    <c:if test="${book != null}">
+                        Edit Book
+                    </c:if>
+                    <c:if test="${book == null}">
+                        Add New Book
+                    </c:if>
+                </h2>
+            </caption>
+                <c:if test="${book != null}">
+                    <input type="hidden" name="id" value="<c:out value='${book.id}' />" />
+                </c:if>           
+            <tr>
+                <th>Title: </th>
+                <td>
+                    <input type="text" name="title" size="45"
+                            value="<c:out value='${book.title}' />"
+                        />
+                </td>
+            </tr>
+            <tr>
+                <th>Author: </th>
+                <td>
+                    <input type="text" name="author" size="45"
+                            value="<c:out value='${book.author}' />"
+                    />
+                </td>
+            </tr>
+            <tr>
+                <th>Price: </th>
+                <td>
+                    <input type="text" name="price" size="5"
+                            value="<c:out value='${book.price}' />"
+                    />
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2" align="center">
+                    <input type="submit" value="Save" />
+                </td>
+            </tr>
+        </table>
+        </form>
+    </div>   
+</body>
+</html>
+
+Step7: create a BookList.jsp to get the list of book information
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8" isELIgnored="false"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<html>
+<head>
+    <title>Books Store Application</title>
+</head>
+<body>
+    <center>
+        <h1>Books Management</h1>
+        <h2>
+            <a href="./new">Add New Book</a>
+            &nbsp;&nbsp;&nbsp;
+            <a href="./list">List All Books</a>
+             
+        </h2>
+    </center>
+    <div align="center">
+        <table border="1" cellpadding="5">
+            <caption><h2>List of Books</h2></caption>
+            <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Price</th>
+                <th>Actions</th>
+            </tr>
+            <c:forEach var="book" items="${listBook}">
+                <tr>
+                    <td><c:out value="${book.id}" /></td>
+                    <td><c:out value="${book.title}" /></td>
+                    <td><c:out value="${book.author}" /></td>
+                    <td><c:out value="${book.price}" /></td>
+                    <td>
+                        <a href="./edit?id=<c:out value='${book.id}' />">Edit</a>
+                        &nbsp;&nbsp;&nbsp;&nbsp;
+                        <a href="./delete?id=<c:out value='${book.id}' />">Delete</a>                     
+                    </td>
+                </tr>
+            </c:forEach>
+        </table>
+    </div>   
+</body>
+</html>
+
+
+step8:create a error.jsp page to display error message
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8" isErrorPage="true" isELIgnored="false" %>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+    "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Error</title>
+</head>
+<body>
+    <center>
+        <h1>Error</h1>
+        <h2><%=exception.getMessage() %><br/> </h2>
+    </center>
+</body>
+</html>
+
+step9: configuring welcome page in web.xml
+<?xml version="1.0"?>
+<!DOCTYPE web-app PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN"
+                         "http://java.sun.com/dtd/web-app_2_3.dtd">
+<web-app>
+	<display-name>Archetype Created Web Application</display-name>
+	<servlet>
+		<servlet-name>ControllerServlet</servlet-name>
+		<display-name>ControllerServlet</display-name>
+		<servlet-class>com.bms.app.controller.ControllerServlet</servlet-class>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>ControllerServlet</servlet-name>
+		<url-pattern>/</url-pattern>
+	</servlet-mapping>
+
+	<welcome-file-list>
+		<welcome-file>BookForm.jsp</welcome-file>
+	</welcome-file-list>
+	<error-page>
+		<exception-type>java.lang.Exception</exception-type>
+		<location>/Error.jsp</location>
+	</error-page>
+</web-app>
+
+
+
+
+
+
+
+
+
+
+
+
