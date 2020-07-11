@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!DOCTYPE web-app PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN"
+                         "http://java.sun.com/dtd/web-app_2_3.dtd">
+<web-app>
+ <display-name>Archetype Created Web Application</display-name>
+ <servlet>
+  <servlet-name>LifeCycleDemo</servlet-name>
+  <display-name>LifeCycleDemo</display-name>
+  <servlet-class>com.chandra.web.LifeCycleDemo</servlet-class>
+ </servlet>
+ <servlet-mapping>
+  <servlet-name>LifeCycleDemo</servlet-name>
+  <url-pattern>/life</url-pattern>
+ </servlet-mapping>
+ <welcome-file-list>
+  <welcome-file>/index.html</welcome-file>
+ </welcome-file-list>
+</web-app>
